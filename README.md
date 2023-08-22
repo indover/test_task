@@ -5,14 +5,13 @@ Console command that monitors the Nginx access.log file and, upon finding new da
 Console command that accepts mandatory parameters 'startDate' and 'finishDate' and outputs all saved records from the Clickhouse DB within the specified time interval.
 Console command that accepts mandatory parameters 'startDate' and 'finishDate' and outputs the count of saved records in the Clickhouse DB within the specified time interval.
 Requirements:
-
-Language: PHP, Framework: Yii2.
-Possible utilization of any additional libraries.
-Infrastructure described in docker-compose.yml (Nginx, Clickhouse, php-fpm, etc.).
-Table for log storage in Clickhouse must be created through migration. The table structure is arbitrary.
-Application configuration should be managed through the .env file.
-The task should contain a Readme file with instructions for setup and execution.
-In case of questions, the decision-making process is left to the candidate (in such cases, the Readme file should include a list of questions the candidate encountered and the approach taken to solve them).
+* Language: PHP, Framework: Yii2.
+* Possible utilization of any additional libraries.
+* Infrastructure described in docker-compose.yml (Nginx, Clickhouse, php-fpm, etc.).
+* Table for log storage in Clickhouse must be created through migration. The table structure is arbitrary.
+* Application configuration should be managed through the .env file.
+* The task should contain a Readme file with instructions for setup and execution.
+* In case of questions, the decision-making process is left to the candidate (in such cases, the Readme file should include a list of questions the candidate encountered and the approach taken to solve them).
 ------------------------------------------------------------------------------------------------------------------------
 log file = .env -> log/access.log
 
