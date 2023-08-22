@@ -1,0 +1,116 @@
+
+version: "3.8"
+services:
+  # PHP config
+  php:
+    build: ./Docker/images/php/8.2
+    volumes:
+      - ./www/:/var/www/
+      - ./www/composer:/home/apache/.composer
+      - ~/.ssh/:/home/app/.ssh/
+    hostname: php
+    container_name: ${APP_CONTAINER}_php
+    extra_hosts:
+      - host.docker.internal:host-gateway
+    restart: unless-stopped
+    environment:
+      - XDEBUG=on
+      - PHP_IDE_CONFIG=serverName=Docker
+      - COMPOSER_VERSION=2
+    networks:
+      - ${APP_CONTAINER}
+
+  #NGINX config
+  nginx:
+    build: ./Docker/images/nginx/1.22
+    volumes:
+      - ./www/:/var/www/
+      - ./conf/nginx/:/etc/nginx/conf.d/
+    container_name: ${APP_CONTAINER}_nginx
+    restart: unless-stopped
+    ports:
+      - "81:80"
+      - "443:443"
+    networks:
+      - ${APP_CONTAINER}
+
+  #MYSQL config
+  mysql:
+    image: mariadb:10.6
+    hostname: mysql
+    container_name: ${APP_CONTAINER}_mysql
+    restart: unless-stopped
+    command:
+      --max_allowed_packet=64M
+      --optimizer_use_condition_selectivity=1
+      --optimizer_switch="rowid_filter=off"
+    ports:
+      - "3307:3306"
+    networks:
+      - ${APP_CONTAINER}
+    volumes:
+      - ./www/mysql/:/var/lib/mysql/
+    environment:
+      - MARIADB_USER=${MYSQL_USER}
+      - MARIADB_PASS=${MYSQL_ROOT_PASSWORD}
+      - MARIADB_ROOT_PASSWORD=${MYSQL_ROOT_PASSWORD}
+
+  #PMA config
+  phpmyadmin:
+    image: phpmyadmin
+    hostname: phpmyadmin
+    container_name: ${APP_CONTAINER}_phpmyadmin
+    restart: unless-stopped
+    ports:
+      - "8080:80"
+    networks:
+      - ${APP_CONTAINER}
+    environment:
+      - MYSQL_USER=${MYSQL_USER}
+      - PMA_PASSWORD=${MYSQL_ROOT_PASSWORD}
+      - PMA_HOST=mysql
+
+  #CLICK_HOUSE config
+  clickhouse:
+    image: yandex/clickhouse-server
+    container_name: ${APP_CONTAINER}_clickhouse
+    ports:
+      - "8123:8123"
+    healthcheck:
+      test: wget --no-verbose --tries=1 --spider localhost:8123/ping || exit 1
+      interval: 2s
+      timeout: 2s
+      retries: 16
+    networks:
+      - ${APP_CONTAINER}
+    environment:
+      - CLICKHOUSE_USER=${CH_USERNAME}
+      - CLICKHOUSE_PASSWORD=${CH_PASSWORD}
+
+  tabix:
+    image: spoonest/clickhouse-tabix-web-client
+    container_name: ${APP_CONTAINER}_tabix
+    ports:
+      - "8082:80"
+    depends_on:
+      - clickhouse
+    restart: unless-stopped
+    networks:
+      - ${APP_CONTAINER}
+    environment:
+      - CH_NAME=clickhouse
+      - CH_HOST=http://localhost:8123
+      - CH_LOGIN=${CH_USERNAME}
+      - CH_PASSWORD=${CH_PASSWORD}
+
+networks:
+  Test:
+    name: ${APP_CONTAINER}
+    driver: bridge
+    driver_opts:
+      com.docker.network.enable_ipv6: "false"
+    ipam:
+      driver: default
+      config:
+        - subnet: 182.25.0.0/24
+          gateway: 182.25.0.1
