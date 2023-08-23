@@ -23,6 +23,11 @@ log file = .env -> log/access.log
 5. Run console command lo listen log file - php yii read-log/list
 6. Run:
    * php yii click-house/raws startDate finishDate -> to get data between input dates
-   * php yii click-house/add-test -> add test data
    * php yii click-house/get-count -> to get count of total data
    * php yii click-house/count startDate finishDate -> to get count of total data between input dates
+
+Some tips:
+* docker ps - check running images
+* docker compose exec php bash - enter to the php image
+* docker rm -fv $(docker ps -aq) - remove all images !!!  be attention
+* docker network prune - remove all networks !!!  be attention

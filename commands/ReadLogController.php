@@ -2,24 +2,22 @@
 
 namespace app\commands;
 
-use Exception;
 use app\service\ClickHouseService;
-use app\service\FileService;
+use app\service\LogService;
 use yii\console\Controller;
+use yii\helpers\BaseConsole;
 
 class ReadLogController extends Controller
 {
-    private FileService $fileService;
+    /**
+     * @var LogService
+     */
+    private LogService $fileService;
+    
+    /**
+     * @var ClickHouseService|null
+     */
     private ?ClickHouseService $clickHouseConnector = null;
-
-    public function getClickHouseConnector(): ClickHouseService
-    {
-        if (!$this->clickHouseConnector) {
-            $this->clickHouseConnector = new ClickHouseService();
-        }
-
-        return $this->clickHouseConnector;
-    }
 
     /**
      * @param $id
@@ -30,46 +28,57 @@ class ReadLogController extends Controller
         $module,
     )
     {
-        $this->fileService = new FileService();
+        $this->fileService = new LogService();
         parent::__construct($id, $module);
+    }
+    /**
+     * @return ClickHouseService
+     */
+    public function getClickHouseConnector(): ClickHouseService
+    {
+        if (!$this->clickHouseConnector) {
+            $this->clickHouseConnector = new ClickHouseService();
+        }
+
+        return $this->clickHouseConnector;
     }
 
     /**
-     * @throws Exception
+     * @return mixed
      */
-    private function getLastLine(): array|string
+    public function actionList(): mixed
     {
-        $this->fileService->checkFile(env('LOG_PATH'));
-
-        $line = file(env('LOG_PATH'), FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES);
-
-        if ($line !== false) {
-            $lastLine = end($line);
-            return ['date' => $this->findDateInLog($lastLine), 'lastLine' => $lastLine];
-        } else {
-            throw new Exception('Error reading the file.');
-        }
-    }
-
-    public function findDateInLog($line): ?string
-    {
-        return $this->fileService->findDateInLog($line);
-    }
-
-    public function actionList()
-    {
-        $this->getClickHouseConnector()->createTable();
-        $lastPosition = 0;
         while (true) {
-            clearstatcache(true, env('LOG_PATH'));
-            $currentSize = filesize(env('LOG_PATH'));
+            $startTime = microtime(true);
 
-            if ($currentSize > $lastPosition) {
-                $this->getClickHouseConnector()->addLog($this->getLastLine()['date'], $this->getLastLine()['lastLine']);
-                $lastPosition = $currentSize;
-            }
+            $this->stdout('Total count raws from file ===>> ' . count(file(env('LOG_PATH'))) . PHP_EOL, BaseConsole::FG_GREEN);
 
-            sleep(1);
+            $data = $this->getClickHouseConnector()->findByColumn('data')->rows();
+
+            $this->stdout('Total count rows from DB ===>> ' . count($data) . PHP_EOL, BaseConsole::FG_GREEN);
+
+            $newData = $this->fileService->findNewData($data, file(env('LOG_PATH')));
+
+            $this->stdout('Total count rows have to insert  ===>> ' . count($newData) . PHP_EOL, $this->checkColor(count($newData)));
+
+            $this->getClickHouseConnector()->addLog($newData);
+
+            $this->stdout('Time spent ===>> ' . round(((microtime(true) - $startTime)), 2) . ' sec' . PHP_EOL, BaseConsole::FG_YELLOW);
+            
+            sleep(10);
         }
+    }
+
+    /**
+     * @param int $count
+     * @return int
+     */
+    private function checkColor(int $count): int
+    {
+        if ($count > 0)
+        {
+            return BaseConsole::FG_RED;
+        }
+            return BaseConsole::FG_GREEN;
     }
 }
