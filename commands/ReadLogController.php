@@ -12,7 +12,7 @@ class ReadLogController extends Controller
     /**
      * @var LogService
      */
-    private LogService $fileService;
+    private LogService $logService;
 
     /**
      * @var ClickHouseService|null
@@ -28,7 +28,7 @@ class ReadLogController extends Controller
         $module,
     )
     {
-        $this->fileService = new LogService();
+        $this->logService = new LogService();
         parent::__construct($id, $module);
     }
 
@@ -58,7 +58,7 @@ class ReadLogController extends Controller
 
             $this->stdout('Total count rows from DB ===>> ' . count($data) . PHP_EOL, BaseConsole::FG_GREEN);
 
-            $newData = $this->fileService->findNewData($data, file(env('LOG_PATH')));
+            $newData = $this->logService->findNewData($data, file(env('LOG_PATH')));
 
             $this->stdout('Total count rows have to insert ===>> ' . count($newData) . PHP_EOL, $this->checkColor(count($newData)));
 
