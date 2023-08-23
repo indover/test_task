@@ -13,7 +13,7 @@ class ReadLogController extends Controller
      * @var LogService
      */
     private LogService $fileService;
-    
+
     /**
      * @var ClickHouseService|null
      */
@@ -31,6 +31,7 @@ class ReadLogController extends Controller
         $this->fileService = new LogService();
         parent::__construct($id, $module);
     }
+
     /**
      * @return ClickHouseService
      */
@@ -59,12 +60,12 @@ class ReadLogController extends Controller
 
             $newData = $this->fileService->findNewData($data, file(env('LOG_PATH')));
 
-            $this->stdout('Total count rows have to insert  ===>> ' . count($newData) . PHP_EOL, $this->checkColor(count($newData)));
+            $this->stdout('Total count rows have to insert ===>> ' . count($newData) . PHP_EOL, $this->checkColor(count($newData)));
 
             $this->getClickHouseConnector()->addLog($newData);
 
             $this->stdout('Time spent ===>> ' . round(((microtime(true) - $startTime)), 2) . ' sec' . PHP_EOL, BaseConsole::FG_YELLOW);
-            
+
             sleep(10);
         }
     }
@@ -75,10 +76,9 @@ class ReadLogController extends Controller
      */
     private function checkColor(int $count): int
     {
-        if ($count > 0)
-        {
+        if ($count > 0) {
             return BaseConsole::FG_RED;
         }
-            return BaseConsole::FG_GREEN;
+        return BaseConsole::FG_GREEN;
     }
 }
